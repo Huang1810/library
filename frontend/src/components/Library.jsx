@@ -38,8 +38,8 @@ const Library = () => {
   if (error) return <Typography>Error: {error}</Typography>;
 
   return (
-    <div>
-      <Typography variant="h4" gutterBottom>Library</Typography>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ color: '#2e51a2' }}>Library</Typography>
       <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
         <FormControl sx={{ minWidth: 120 }}>
           <InputLabel>Category</InputLabel>
@@ -54,7 +54,7 @@ const Library = () => {
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
         />
-        <Button variant="contained" onClick={handleSearch}>Search</Button>
+        <Button variant="contained" onClick={handleSearch} sx={{ backgroundColor: '#2e51a2' }}>Search</Button>
       </Box>
       <Grid container spacing={2}>
         {items.length > 0 ? (
@@ -71,7 +71,7 @@ const Library = () => {
                   <Typography
                     variant="h6"
                     component={Link}
-                    to={`/library/${category}/${item.externalId}`} // Updated path
+                    to={`/${category}/${item.externalId}`} // Fixed path
                     sx={{ textDecoration: 'none', color: '#2e51a2' }}
                   >
                     {item.title}
@@ -84,7 +84,7 @@ const Library = () => {
           <Typography>No items found</Typography>
         )}
       </Grid>
-    </div>
+    </Box>
   );
 };
 
