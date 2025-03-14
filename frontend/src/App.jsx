@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
-import Home from './components/Home'; // New import
+import Home from './components/Home'; 
 import Library from './components/Library';
 import Top5 from './components/Top5';
 import Profile from './components/Profile';
