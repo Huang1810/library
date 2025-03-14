@@ -12,7 +12,7 @@ const BookSchema = new mongoose.Schema({
   ratings: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
-    createdAt: { type: Date, default: Date.now } // Added for weekly top 5
+    createdAt: { type: Date, default: Date.now }
   }],
   reviews: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

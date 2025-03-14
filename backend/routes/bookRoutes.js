@@ -6,10 +6,10 @@ const authMiddleware = require('../middleware/auth');
 router.get('/', getBooks);
 router.get('/:externalId', getBook);
 router.post('/rating', authMiddleware, addRating);
-router.put('/rating', authMiddleware, updateRating); // Body: { externalId, ratingId, rating }
+router.put('/rating', authMiddleware, updateRating); 
 router.delete('/:externalId/rating/:ratingId', authMiddleware, deleteRating);
 router.post('/review', authMiddleware, addReview);
-router.put('/review', authMiddleware, updateReview); // Body: { externalId, reviewId, comment }
+router.put('/review', authMiddleware, updateReview); 
 router.delete('/:externalId/review/:reviewId', authMiddleware, deleteReview);
 router.put('/:externalId', authMiddleware, updateBook);
 router.delete('/:externalId', authMiddleware, deleteBook);

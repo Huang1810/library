@@ -57,7 +57,7 @@ exports.getAnimeById = async (req, res) => {
   }
 };
 
-// Add Anime Function
+
 exports.addAnime = async (req, res) => {
   const { externalId, title, description, studio, genre, coverImage, episodes, airingStatus } = req.body;
 

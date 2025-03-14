@@ -9,6 +9,6 @@ router.get('/profile', authMiddleware, getProfile);
 router.put('/profile', authMiddleware, updateProfile);
 router.delete('/profile', authMiddleware, deleteProfile);
 router.post('/list', authMiddleware, addToList);
-router.delete('/list', authMiddleware, removeFromList); // Body: { itemId }
+router.delete('/list', authMiddleware, removeFromList); 
 
 module.exports = router;
