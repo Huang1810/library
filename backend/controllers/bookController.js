@@ -1,5 +1,6 @@
 const axios = require('axios');
 const Book = require('../models/Book');
+const User = require('../models/User'); // Added import
 
 exports.getBooks = async (req, res) => {
   const { query } = req.query;
@@ -66,7 +67,11 @@ exports.addRating = async (req, res) => {
   try {
     const book = await Book.findOne({ externalId });
     if (!book) return res.status(404).json({ msg: 'Book not found' });
-    book.ratings.push({ userId: req.user.id, rating });
+
+    const user = await User.findById(req.user.id).select('username');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    book.ratings.push({ userId: req.user.id, username: user.username, rating });
     await book.save();
     res.json(book);
   } catch (error) {
@@ -79,6 +84,7 @@ exports.updateRating = async (req, res) => {
   try {
     const book = await Book.findOne({ externalId });
     if (!book) return res.status(404).json({ msg: 'Book not found' });
+
     const userRating = book.ratings.id(ratingId);
     if (!userRating || userRating.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Rating not found or unauthorized' });
@@ -96,6 +102,7 @@ exports.deleteRating = async (req, res) => {
   try {
     const book = await Book.findOne({ externalId });
     if (!book) return res.status(404).json({ msg: 'Book not found' });
+
     const userRating = book.ratings.id(ratingId);
     if (!userRating || userRating.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Rating not found or unauthorized' });
@@ -113,7 +120,11 @@ exports.addReview = async (req, res) => {
   try {
     const book = await Book.findOne({ externalId });
     if (!book) return res.status(404).json({ msg: 'Book not found' });
-    book.reviews.push({ userId: req.user.id, comment });
+
+    const user = await User.findById(req.user.id).select('username');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    book.reviews.push({ userId: req.user.id, username: user.username, comment });
     await book.save();
     res.json(book);
   } catch (error) {
@@ -126,6 +137,7 @@ exports.updateReview = async (req, res) => {
   try {
     const book = await Book.findOne({ externalId });
     if (!book) return res.status(404).json({ msg: 'Book not found' });
+
     const userReview = book.reviews.id(reviewId);
     if (!userReview || userReview.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Review not found or unauthorized' });
@@ -143,6 +155,7 @@ exports.deleteReview = async (req, res) => {
   try {
     const book = await Book.findOne({ externalId });
     if (!book) return res.status(404).json({ msg: 'Book not found' });
+
     const userReview = book.reviews.id(reviewId);
     if (!userReview || userReview.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Review not found or unauthorized' });
@@ -177,27 +190,6 @@ exports.deleteBook = async (req, res) => {
     const book = await Book.findOneAndDelete({ externalId });
     if (!book) return res.status(404).json({ msg: 'Book not found' });
     res.json({ msg: 'Book deleted' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getTop5 = async (req, res) => {
-  try {
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const books = await Book.aggregate([
-      { $unwind: '$ratings' },
-      { $match: { 'ratings.createdAt': { $gte: oneWeekAgo } } },
-      { $group: {
-        _id: { _id: '$_id', title: '$title', externalId: '$externalId' },
-        averageRating: { $avg: '$ratings.rating' },
-        ratingCount: { $sum: 1 }
-      }},
-      { $sort: { averageRating: -1, ratingCount: -1 } },
-      { $limit: 5 },
-      { $project: { title: '$_id.title', externalId: '$_id.externalId', averageRating: 1 }}
-    ]);
-    res.json(books);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

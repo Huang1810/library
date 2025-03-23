@@ -11,11 +11,13 @@ const BookSchema = new mongoose.Schema({
   isbn: { type: String },
   ratings: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    username: { type: String }, // Added this
     rating: { type: Number, required: true, min: 1, max: 5 },
     createdAt: { type: Date, default: Date.now }
   }],
   reviews: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    username: { type: String }, // Added this
     comment: { type: String, required: true },
     createdAt: { type: Date, default: Date.now }
   }],

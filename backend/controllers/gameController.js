@@ -1,5 +1,6 @@
 const axios = require('axios');
 const Game = require('../models/Game');
+const User = require('../models/User');
 
 exports.getGames = async (req, res) => {
   const { query } = req.query;
@@ -29,6 +30,7 @@ exports.getGames = async (req, res) => {
     }
     res.json(games);
   } catch (error) {
+    console.error('Error in getGames:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -36,7 +38,7 @@ exports.getGames = async (req, res) => {
 exports.getGame = async (req, res) => {
   const { externalId } = req.params;
   try {
-    const game = await Game.findOne({ externalId }).populate('ratings.userId reviews.userId', 'username');
+    const game = await Game.findOne({ externalId });
     if (!game) {
       const response = await axios.get(
         `https://api.rawg.io/api/games/${externalId}?key=${process.env.RAWG_API_KEY}`
@@ -57,6 +59,7 @@ exports.getGame = async (req, res) => {
     }
     res.json(game);
   } catch (error) {
+    console.error('Error in getGame:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -66,10 +69,15 @@ exports.addRating = async (req, res) => {
   try {
     const game = await Game.findOne({ externalId });
     if (!game) return res.status(404).json({ msg: 'Game not found' });
-    game.ratings.push({ userId: req.user.id, rating });
+    
+    const user = await User.findById(req.user.id).select('username');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    
+    game.ratings.push({ userId: req.user.id, username: user.username, rating });
     await game.save();
     res.json(game);
   } catch (error) {
+    console.error('Error in addRating:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -79,6 +87,7 @@ exports.updateRating = async (req, res) => {
   try {
     const game = await Game.findOne({ externalId });
     if (!game) return res.status(404).json({ msg: 'Game not found' });
+    
     const userRating = game.ratings.id(ratingId);
     if (!userRating || userRating.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Rating not found or unauthorized' });
@@ -87,6 +96,7 @@ exports.updateRating = async (req, res) => {
     await game.save();
     res.json(game);
   } catch (error) {
+    console.error('Error in updateRating:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -96,6 +106,7 @@ exports.deleteRating = async (req, res) => {
   try {
     const game = await Game.findOne({ externalId });
     if (!game) return res.status(404).json({ msg: 'Game not found' });
+    
     const userRating = game.ratings.id(ratingId);
     if (!userRating || userRating.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Rating not found or unauthorized' });
@@ -104,6 +115,7 @@ exports.deleteRating = async (req, res) => {
     await game.save();
     res.json(game);
   } catch (error) {
+    console.error('Error in deleteRating:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -113,10 +125,15 @@ exports.addReview = async (req, res) => {
   try {
     const game = await Game.findOne({ externalId });
     if (!game) return res.status(404).json({ msg: 'Game not found' });
-    game.reviews.push({ userId: req.user.id, comment });
+    
+    const user = await User.findById(req.user.id).select('username');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    
+    game.reviews.push({ userId: req.user.id, username: user.username, comment });
     await game.save();
     res.json(game);
   } catch (error) {
+    console.error('Error in addReview:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -126,6 +143,7 @@ exports.updateReview = async (req, res) => {
   try {
     const game = await Game.findOne({ externalId });
     if (!game) return res.status(404).json({ msg: 'Game not found' });
+    
     const userReview = game.reviews.id(reviewId);
     if (!userReview || userReview.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Review not found or unauthorized' });
@@ -134,6 +152,7 @@ exports.updateReview = async (req, res) => {
     await game.save();
     res.json(game);
   } catch (error) {
+    console.error('Error in updateReview:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -143,6 +162,7 @@ exports.deleteReview = async (req, res) => {
   try {
     const game = await Game.findOne({ externalId });
     if (!game) return res.status(404).json({ msg: 'Game not found' });
+    
     const userReview = game.reviews.id(reviewId);
     if (!userReview || userReview.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Review not found or unauthorized' });
@@ -151,6 +171,7 @@ exports.deleteReview = async (req, res) => {
     await game.save();
     res.json(game);
   } catch (error) {
+    console.error('Error in deleteReview:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -167,6 +188,7 @@ exports.updateGame = async (req, res) => {
     if (!game) return res.status(404).json({ msg: 'Game not found' });
     res.json(game);
   } catch (error) {
+    console.error('Error in updateGame:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -178,27 +200,7 @@ exports.deleteGame = async (req, res) => {
     if (!game) return res.status(404).json({ msg: 'Game not found' });
     res.json({ msg: 'Game deleted' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getTop5 = async (req, res) => {
-  try {
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const games = await Game.aggregate([
-      { $unwind: '$ratings' },
-      { $match: { 'ratings.createdAt': { $gte: oneWeekAgo } } },
-      { $group: {
-        _id: { _id: '$_id', title: '$title', externalId: '$externalId' },
-        averageRating: { $avg: '$ratings.rating' },
-        ratingCount: { $sum: 1 }
-      }},
-      { $sort: { averageRating: -1, ratingCount: -1 } },
-      { $limit: 5 },
-      { $project: { title: '$_id.title', externalId: '$_id.externalId', averageRating: 1 }}
-    ]);
-    res.json(games);
-  } catch (error) {
+    console.error('Error in deleteGame:', error);
     res.status(500).json({ error: error.message });
   }
 };

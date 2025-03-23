@@ -24,6 +24,5 @@ app.use('/api/anime', require('./routes/animeRoutes'));
 app.use('/api/games', require('./routes/gameRoutes'));
 app.use('/api/forum', require('./routes/forumRoutes'));
 
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

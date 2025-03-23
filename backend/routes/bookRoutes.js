@@ -13,6 +13,5 @@ router.put('/review', authMiddleware, updateReview);
 router.delete('/:externalId/review/:reviewId', authMiddleware, deleteReview);
 router.put('/:externalId', authMiddleware, updateBook);
 router.delete('/:externalId', authMiddleware, deleteBook);
-router.get('/top5', getTop5);
 
 module.exports = router;

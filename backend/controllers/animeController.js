@@ -1,5 +1,6 @@
 const axios = require('axios');
 const Anime = require('../models/Anime');
+const User = require('../models/User'); // Added import
 
 exports.getAnime = async (req, res) => {
   const { query } = req.query;
@@ -57,10 +58,8 @@ exports.getAnimeById = async (req, res) => {
   }
 };
 
-
 exports.addAnime = async (req, res) => {
   const { externalId, title, description, studio, genre, coverImage, episodes, airingStatus } = req.body;
-
   try {
     const newAnime = new Anime({
       externalId,
@@ -74,7 +73,6 @@ exports.addAnime = async (req, res) => {
       ratings: [],
       reviews: []
     });
-
     await newAnime.save();
     res.status(201).json(newAnime);
   } catch (error) {
@@ -87,7 +85,11 @@ exports.addRating = async (req, res) => {
   try {
     const anime = await Anime.findOne({ externalId });
     if (!anime) return res.status(404).json({ msg: 'Anime not found' });
-    anime.ratings.push({ userId: req.user.id, rating });
+
+    const user = await User.findById(req.user.id).select('username');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    anime.ratings.push({ userId: req.user.id, username: user.username, rating });
     await anime.save();
     res.json(anime);
   } catch (error) {
@@ -100,6 +102,7 @@ exports.updateRating = async (req, res) => {
   try {
     const anime = await Anime.findOne({ externalId });
     if (!anime) return res.status(404).json({ msg: 'Anime not found' });
+
     const userRating = anime.ratings.id(ratingId);
     if (!userRating || userRating.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Rating not found or unauthorized' });
@@ -117,6 +120,7 @@ exports.deleteRating = async (req, res) => {
   try {
     const anime = await Anime.findOne({ externalId });
     if (!anime) return res.status(404).json({ msg: 'Anime not found' });
+
     const userRating = anime.ratings.id(ratingId);
     if (!userRating || userRating.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Rating not found or unauthorized' });
@@ -134,7 +138,11 @@ exports.addReview = async (req, res) => {
   try {
     const anime = await Anime.findOne({ externalId });
     if (!anime) return res.status(404).json({ msg: 'Anime not found' });
-    anime.reviews.push({ userId: req.user.id, comment });
+
+    const user = await User.findById(req.user.id).select('username');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    anime.reviews.push({ userId: req.user.id, username: user.username, comment });
     await anime.save();
     res.json(anime);
   } catch (error) {
@@ -147,6 +155,7 @@ exports.updateReview = async (req, res) => {
   try {
     const anime = await Anime.findOne({ externalId });
     if (!anime) return res.status(404).json({ msg: 'Anime not found' });
+
     const userReview = anime.reviews.id(reviewId);
     if (!userReview || userReview.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Review not found or unauthorized' });
@@ -164,6 +173,7 @@ exports.deleteReview = async (req, res) => {
   try {
     const anime = await Anime.findOne({ externalId });
     if (!anime) return res.status(404).json({ msg: 'Anime not found' });
+
     const userReview = anime.reviews.id(reviewId);
     if (!userReview || userReview.userId.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Review not found or unauthorized' });
@@ -198,27 +208,6 @@ exports.deleteAnime = async (req, res) => {
     const anime = await Anime.findOneAndDelete({ externalId });
     if (!anime) return res.status(404).json({ msg: 'Anime not found' });
     res.json({ msg: 'Anime deleted' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getTop5 = async (req, res) => {
-  try {
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const anime = await Anime.aggregate([
-      { $unwind: '$ratings' },
-      { $match: { 'ratings.createdAt': { $gte: oneWeekAgo } } },
-      { $group: {
-        _id: { _id: '$_id', title: '$title', externalId: '$externalId' },
-        averageRating: { $avg: '$ratings.rating' },
-        ratingCount: { $sum: 1 }
-      }},
-      { $sort: { averageRating: -1, ratingCount: -1 } },
-      { $limit: 5 },
-      { $project: { title: '$_id.title', externalId: '$_id.externalId', averageRating: 1 }}
-    ]);
-    res.json(anime);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
