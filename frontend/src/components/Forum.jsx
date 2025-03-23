@@ -1,168 +1,433 @@
 import React, { useState, useEffect } from 'react';
 import API from '../api';
-import { Typography, Box, TextField, Button, List, ListItem, ListItemText, Paper, CircularProgress, Alert } from '@mui/material';
+import { 
+  Typography, Box, Button, TextField, List, ListItem, ListItemText, IconButton, Alert, 
+  Card, CardContent, CardActions, Divider, Paper 
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 
 const Forum = () => {
+  const { postId } = useParams();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
-  const [newPost, setNewPost] = useState({ title: '', content: '' });
-  const [editPost, setEditPost] = useState(null); // For editing
+  const [post, setPost] = useState(null);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [replyContent, setReplyContent] = useState('');
+  const [editPostId, setEditPostId] = useState(null);
+  const [editReplyId, setEditReplyId] = useState(null);
+  const [editContent, setEditContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [posting, setPosting] = useState(false);
-  const userId = localStorage.getItem('userId'); // Assuming user ID stored after login
+  const [success, setSuccess] = useState(null);
+  const loggedIn = !!localStorage.getItem('token');
+  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
-    API.get('/forum')
-      .then(response => {
-        setPosts(response.data);
-        setLoading(false);
-      })
-      .catch(error => {
-        setError('Failed to load posts');
-        setLoading(false);
-      });
-  }, []);
-
-  const handleSubmit = async () => {
-    if (!newPost.title.trim() || !newPost.content.trim()) {
-      setError('Title and Content are required');
-      return;
+    if (postId) {
+      fetchPost();
+    } else {
+      fetchPosts();
     }
-    setPosting(true);
+  }, [postId]);
+
+  const fetchPosts = async () => {
     try {
-      const response = await API.post('/forum', newPost);
-      setPosts([response.data, ...posts]);
-      setNewPost({ title: '', content: '' });
+      setLoading(true);
+      const response = await API.get('/forum');
+      console.log('API response:', response.data);
+      setPosts(Array.isArray(response.data) ? response.data : []);
       setError(null);
-    } catch (err) {
-      setError('Failed to create post');
+    } catch (error) {
+      console.error('Error fetching posts:', error.response?.data || error.message);
+      setError('Failed to load posts');
     } finally {
-      setPosting(false);
+      setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
+  const fetchPost = async () => {
+    try {
+      setLoading(true);
+      const response = await API.get(`/forum/${postId}`);
+      console.log('Post response:', response.data);
+      setPost(response.data);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching post:', error.response?.data || error.message);
+      setError('Failed to load post');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreatePost = async () => {
+    if (!loggedIn) {
+      setError('Please log in to create a post');
+      return;
+    }
+    if (!title.trim() || !content.trim()) {
+      setError('Title and content cannot be empty');
+      return;
+    }
+    try {
+      const response = await API.post('/forum', { title, content });
+      setPosts([response.data, ...posts]);
+      setTitle('');
+      setContent('');
+      setSuccess('Post created successfully');
+      setTimeout(() => setSuccess(null), 3000);
+      setError(null);
+    } catch (error) {
+      console.error('Error creating post:', error.response?.data || error.message);
+      setError('Failed to create post');
+    }
+  };
+
+  const handleUpdatePost = async () => {
+    if (!content.trim()) {
+      setError('Content cannot be empty');
+      return;
+    }
+    try {
+      const response = await API.put(`/forum/${editPostId}`, { title, content });
+      setPost(response.data);
+      setPosts(posts.map(p => (p._id === editPostId ? response.data : p)));
+      setEditPostId(null);
+      setTitle('');
+      setContent('');
+      setSuccess('Post updated successfully');
+      setTimeout(() => setSuccess(null), 3000);
+      setError(null);
+    } catch (error) {
+      console.error('Error updating post:', error.response?.data || error.message);
+      setError('Failed to update post');
+    }
+  };
+
+  const handleDeletePost = async (id) => {
+    if (!loggedIn) {
+      setError('Please log in to delete');
+      return;
+    }
     try {
       await API.delete(`/forum/${id}`);
-      setPosts(posts.filter(post => post._id !== id));
-    } catch (err) {
+      if (postId) {
+        setPost(null);
+        navigate('/forum');
+        await fetchPosts();
+      } else {
+        await fetchPosts();
+      }
+      setSuccess('Post deleted successfully');
+      setTimeout(() => setSuccess(null), 3000);
+      setError(null);
+    } catch (error) {
+      console.error('Error deleting post:', error.response?.data || error.message);
       setError('Failed to delete post');
-      console.error(err);
     }
   };
 
-  const handleEditStart = (post) => {
-    setEditPost({ id: post._id, title: post.title, content: post.content });
-  };
-
-  const handleEditSubmit = async () => {
-    if (!editPost.title.trim() || !editPost.content.trim()) {
-      setError('Title and Content are required');
+  const handleAddReply = async () => {
+    if (!loggedIn) {
+      setError('Please log in to reply');
+      return;
+    }
+    if (!replyContent.trim()) {
+      setError('Reply content cannot be empty');
       return;
     }
     try {
-      const response = await API.put(`/forum/${editPost.id}`, {
-        title: editPost.title,
-        content: editPost.content,
-      });
-      setPosts(posts.map(post => (post._id === editPost.id ? response.data : post)));
-      setEditPost(null);
+      await API.post(`/forum/${postId}/reply`, { content: replyContent });
+      setReplyContent('');
+      setSuccess('Reply added successfully');
+      setTimeout(() => setSuccess(null), 3000);
+      await fetchPost();
       setError(null);
-    } catch (err) {
-      setError('Failed to update post');
-      console.error(err);
+    } catch (error) {
+      console.error('Error adding reply:', error.response?.data || error.message);
+      setError('Failed to add reply');
     }
   };
 
+  const handleUpdateReply = async () => {
+    if (!editContent.trim()) {
+      setError('Reply content cannot be empty');
+      return;
+    }
+    try {
+      const response = await API.put(`/forum/${postId}/reply`, { replyId: editReplyId, content: editContent });
+      setPost(response.data);
+      setEditReplyId(null);
+      setEditContent('');
+      setSuccess('Reply updated successfully');
+      setTimeout(() => setSuccess(null), 3000);
+      setError(null);
+    } catch (error) {
+      console.error('Error updating reply:', error.response?.data || error.message);
+      setError('Failed to update reply');
+    }
+  };
+
+  const handleDeleteReply = async (replyId) => {
+    if (!loggedIn) {
+      setError('Please log in to delete');
+      return;
+    }
+    try {
+      const response = await API.delete(`/forum/${postId}/reply/${replyId}`);
+      setPost(response.data);
+      setSuccess('Reply deleted successfully');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error) {
+      console.error('Error deleting reply:', error.response?.data || error.message);
+      setError('Failed to delete reply');
+    }
+  };
+
+  if (loading) return <Typography variant="h6" align="center">Loading...</Typography>;
+  if (error) return <Typography variant="h6" align="center">{error}</Typography>;
+  if (!postId && (!posts || posts.length === 0)) return <Typography variant="h6" align="center">No posts yet</Typography>;
+  if (postId && !post) return <Typography variant="h6" align="center">Post not found</Typography>;
+
   return (
-    <Box sx={{ maxWidth: 600, margin: 'auto', mt: 4 }}>
-      <Typography variant="h4" gutterBottom textAlign="center" sx={{ color: '#2e51a2' }}>
+    <Box sx={{ maxWidth: 900, mx: 'auto', p: 3 }}>
+      <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
         Forum
       </Typography>
+      {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {!postId ? (
+        <>
+          {loggedIn && (
+            <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+              <Typography variant="h5" gutterBottom>Create a New Post</Typography>
+              <TextField
+                label="Post Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                fullWidth
+                variant="outlined"
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                label="Post Content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                fullWidth
+                multiline
+                rows={4}
+                variant="outlined"
+                sx={{ mb: 2 }}
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={editPostId ? handleUpdatePost : handleCreatePost}
+                sx={{ 
+                  borderRadius: 1, 
+                  textTransform: 'none', 
+                  px: 3, 
+                  py: 1, 
+                  '&:hover': { bgcolor: '#115293' } 
+                }}
+              >
+                {editPostId ? 'Update Post' : 'Create Post'}
+              </Button>
+            </Paper>
+          )}
+          <List sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {posts.map(p => (
+              <Card
+                key={p._id}
+                elevation={2}
+                sx={{ 
+                  borderRadius: 2, 
+                  '&:hover': { boxShadow: 6 }, 
+                  transition: 'box-shadow 0.3s' 
+                }}
+              >
+                <CardContent>
+                  <ListItem
+                    secondaryAction={
+                      loggedIn && p.user?._id === userId && (
+                        <Box>
+                          <IconButton 
+                            onClick={() => { setEditPostId(p._id); setTitle(p.title); setContent(p.content); }} 
+                            sx={{ color: '#1976d2' }}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton 
+                            onClick={() => handleDeletePost(p._id)} 
+                            sx={{ color: '#d32f2f' }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
+                      )
+                    }
+                  >
+                    <ListItemText
+                      primary={
+                        <Link to={`/forum/${p._id}`} style={{ textDecoration: 'none', color: '#1976d2' }}>
+                          <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+                            {p.title}
+                          </Typography>
+                        </Link>
+                      }
+                      secondary={
+                        <Typography variant="body2" color="text.secondary">
+                          By {p.user?.username || 'Deleted User'} - {new Date(p.createdAt).toLocaleDateString()}
+                        </Typography>
+                      }
+                    />
+                  </ListItem>
+                </CardContent>
+              </Card>
+            ))}
+          </List>
+        </>
+      ) : post ? (
+        <Box>
+          <Card elevation={3} sx={{ borderRadius: 2, mb: 4 }}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
+                {post.title}
+              </Typography>
+              <Typography variant="subtitle1" color="text.secondary">
+                By {post.user?.username || 'Deleted User'} - {new Date(post.createdAt).toLocaleDateString()}
+              </Typography>
+              <Typography variant="body1" sx={{ mt: 2, lineHeight: 1.6 }}>
+                {post.content}
+              </Typography>
+            </CardContent>
+            {loggedIn && post.user?._id === userId && (
+              <CardActions sx={{ p: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={() => { setEditPostId(post._id); setTitle(post.title); setContent(post.content); }}
+                  sx={{ borderRadius: 1, textTransform: 'none', mr: 1 }}
+                >
+                  Edit Post
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => handleDeletePost(post._id)}
+                  sx={{ borderRadius: 1, textTransform: 'none' }}
+                >
+                  Delete Post
+                </Button>
+              </CardActions>
+            )}
+          </Card>
 
-      {/* Post Creation */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <TextField
-          label="Title"
-          fullWidth
-          value={newPost.title}
-          onChange={e => setNewPost({ ...newPost, title: e.target.value })}
-          sx={{ mb: 1 }}
-        />
-        <TextField
-          label="Content"
-          multiline
-          rows={4}
-          fullWidth
-          value={newPost.content}
-          onChange={e => setNewPost({ ...newPost, content: e.target.value })}
-          sx={{ mb: 2 }}
-        />
-        <Button variant="contained" onClick={handleSubmit} disabled={posting} fullWidth sx={{ backgroundColor: '#2e51a2' }}>
-          {posting ? 'Posting...' : 'Create Post'}
-        </Button>
-      </Paper>
-
-      {/* Edit Form */}
-      {editPost && (
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <TextField
-            label="Edit Title"
-            fullWidth
-            value={editPost.title}
-            onChange={e => setEditPost({ ...editPost, title: e.target.value })}
-            sx={{ mb: 1 }}
-          />
-          <TextField
-            label="Edit Content"
-            multiline
-            rows={4}
-            fullWidth
-            value={editPost.content}
-            onChange={e => setEditPost({ ...editPost, content: e.target.value })}
-            sx={{ mb: 2 }}
-          />
-          <Button variant="contained" onClick={handleEditSubmit} sx={{ mr: 1, backgroundColor: '#2e51a2' }}>
-            Save
-          </Button>
-          <Button variant="outlined" onClick={() => setEditPost(null)}>Cancel</Button>
-        </Paper>
-      )}
-
-      {/* Forum Posts */}
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-          <CircularProgress />
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 'medium' }}>
+              Replies
+            </Typography>
+            {loggedIn && (
+              <Paper elevation={2} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+                <TextField
+                  label="Add a Reply"
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  fullWidth
+                  multiline
+                  rows={3}
+                  variant="outlined"
+                  sx={{ mb: 2 }}
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleAddReply}
+                  sx={{ borderRadius: 1, textTransform: 'none', px: 3, py: 1, '&:hover': { bgcolor: '#115293' } }}
+                >
+                  Submit Reply
+                </Button>
+              </Paper>
+            )}
+            <List sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {post.replies.map(r => (
+                <Card key={r._id} elevation={1} sx={{ borderRadius: 2 }}>
+                  <CardContent>
+                    <ListItem
+                      secondaryAction={
+                        loggedIn && r.user?._id === userId && (
+                          <>
+                            {editReplyId === r._id ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <TextField
+                                  value={editContent}
+                                  onChange={(e) => setEditContent(e.target.value)}
+                                  multiline
+                                  rows={2}
+                                  sx={{ width: 300 }}
+                                />
+                                <Button 
+                                  variant="contained" 
+                                  size="small" 
+                                  onClick={handleUpdateReply}
+                                  sx={{ textTransform: 'none' }}
+                                >
+                                  Save
+                                </Button>
+                                <Button 
+                                  variant="outlined" 
+                                  size="small" 
+                                  onClick={() => setEditReplyId(null)}
+                                  sx={{ textTransform: 'none' }}
+                                >
+                                  Cancel
+                                </Button>
+                              </Box>
+                            ) : (
+                              <Box>
+                                <IconButton 
+                                  onClick={() => { setEditReplyId(r._id); setEditContent(r.content); }} 
+                                  sx={{ color: '#1976d2' }}
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                                <IconButton 
+                                  onClick={() => handleDeleteReply(r._id)} 
+                                  sx={{ color: '#d32f2f' }}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Box>
+                            )}
+                          </>
+                        )
+                      }
+                    >
+                      <ListItemText
+                        primary={
+                          <Typography variant="body1">
+                            <strong>{r.user?.username || 'Deleted User'}</strong>: {r.content}
+                          </Typography>
+                        }
+                        secondary={
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(r.createdAt).toLocaleDateString()}
+                          </Typography>
+                        }
+                      />
+                    </ListItem>
+                  </CardContent>
+                </Card>
+              ))}
+            </List>
+          </Box>
         </Box>
       ) : (
-        <List>
-          {posts.length > 0 ? (
-            posts.map(post => (
-              <Paper sx={{ p: 2, mb: 2 }} key={post._id}>
-                <ListItem>
-                  <ListItemText
-                    primary={post.title}
-                    secondary={`${post.user.username}: ${post.content}`}
-                  />
-                  {post.user._id === userId && ( // Show controls only for user's posts
-                    <Box>
-                      <Button onClick={() => handleEditStart(post)} sx={{ color: '#2e51a2', mr: 1 }}>
-                        Edit
-                      </Button>
-                      <Button onClick={() => handleDelete(post._id)} sx={{ color: '#d32f2f' }}>
-                        Delete
-                      </Button>
-                    </Box>
-                  )}
-                </ListItem>
-              </Paper>
-            ))
-          ) : (
-            <Typography>No posts available. Be the first to post!</Typography>
-          )}
-        </List>
+        <Typography variant="h6" align="center">Post not found</Typography>
       )}
     </Box>
   );

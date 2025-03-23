@@ -1,6 +1,6 @@
 import React from 'react';
-import { Drawer, List, ListItem, ListItemText, ListItemButton, ListItemIcon } from '@mui/material';
-import { Home, LibraryBooks, Star, Forum } from '@mui/icons-material';
+import { Drawer, List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
+import { Home, LibraryBooks, Star, Forum, List as ListIcon } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 
 const Sidebar = () => {
@@ -9,7 +9,7 @@ const Sidebar = () => {
   const menuItems = [
     { text: 'Home', icon: <Home />, path: '/' },
     { text: 'Library', icon: <LibraryBooks />, path: '/library' },
-    { text: 'Top 5', icon: <Star />, path: '/top5' },
+    { text: 'Lists', icon: <ListIcon />, path: '/lists' },
     { text: 'Forum', icon: <Forum />, path: '/forum' },
   ];
 
