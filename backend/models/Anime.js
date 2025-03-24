@@ -11,13 +11,13 @@ const AnimeSchema = new mongoose.Schema({
   airingStatus: { type: String },
   ratings: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    username: { type: String }, // Added this
+    username: { type: String },
     rating: { type: Number, required: true, min: 1, max: 5 },
     createdAt: { type: Date, default: Date.now }
   }],
   reviews: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    username: { type: String }, // Added this
+    username: { type: String },
     comment: { type: String, required: true },
     createdAt: { type: Date, default: Date.now }
   }],

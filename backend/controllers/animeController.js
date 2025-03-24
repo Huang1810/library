@@ -1,6 +1,6 @@
 const axios = require('axios');
 const Anime = require('../models/Anime');
-const User = require('../models/User'); // Added import
+const User = require('../models/User');
 
 exports.getAnime = async (req, res) => {
   const { query } = req.query;

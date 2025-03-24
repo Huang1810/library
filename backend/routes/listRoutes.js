@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const listController = require('../controllers/listController');
-const authMiddleware = require('../middleware/auth'); // Assuming you have this
+const authMiddleware = require('../middleware/auth');
 
 router.post('/', authMiddleware, listController.createList);
 router.get('/', authMiddleware, listController.getUserLists);

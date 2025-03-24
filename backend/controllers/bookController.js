@@ -1,6 +1,6 @@
 const axios = require('axios');
 const Book = require('../models/Book');
-const User = require('../models/User'); // Added import
+const User = require('../models/User');
 
 exports.getBooks = async (req, res) => {
   const { query } = req.query;
