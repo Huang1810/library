@@ -39,7 +39,7 @@ const Lists = () => {
       return;
     }
     try {
-      await API.delete('/user/list', { data: { itemId } }); // Matches userController.removeFromList
+      await API.delete('/user/list', { data: { itemId } });
       setUserList(prevList => prevList.filter(item => item.item._id !== itemId));
       setSuccess('Item removed from your list');
       setTimeout(() => setSuccess(null), 3000);

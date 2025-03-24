@@ -23,7 +23,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/library" element={<Library />} />
-            {/* Removed: <Route path="/top5" element={<Top5 />} /> */}
+            
             <Route path="/auth" element={<Auth setLoggedIn={setLoggedIn} />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/lists" element={<Lists />} />

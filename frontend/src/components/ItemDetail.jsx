@@ -24,7 +24,7 @@ const ItemDetail = () => {
           const userResponse = await API.get('/user/profile');
           const userList = userResponse.data.list || [];
           const model = category === "anime" ? "Anime" : 
-                        category.charAt(0).toUpperCase() + category.slice(1, -1); // "Anime", "Book", "Game"
+                        category.charAt(0).toUpperCase() + category.slice(1, -1);
           const isAlreadyInList = userList.some(
             listItem => listItem.itemModel === model && listItem.item.externalId === externalId
           );
@@ -89,7 +89,7 @@ const ItemDetail = () => {
       return;
     }
     const model = category === "anime" ? "Anime" : 
-                  category.charAt(0).toUpperCase() + category.slice(1, -1); // "Anime", "Book", "Game"
+                  category.charAt(0).toUpperCase() + category.slice(1, -1);
     try {
       const response = await API.post('/user/list', { externalId, model });
       setIsInList(true);

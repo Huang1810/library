@@ -87,9 +87,7 @@ const Home = () => {
       )}
 
       <Box sx={{ mt: 5, textAlign: 'center' }}>
-        <Button variant="contained" sx={{ mx: 1, backgroundColor: '#2e51a2' }} component={Link} to="/top5">
-          Top 5 Rankings
-        </Button>
+        
         <Button variant="contained" sx={{ mx: 1, backgroundColor: '#2e51a2' }} component={Link} to="/forum">
           Join the Forum
         </Button>

@@ -17,7 +17,7 @@ const Header = ({ loggedIn, setLoggedIn }) => {
   return (
     <AppBar position="static" sx={{ backgroundColor: '#1c1c1c', padding: '0.5rem' }}>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        {/* Logo */}
+        
         <Typography 
           variant="h5" 
           component={Link} 
@@ -26,7 +26,7 @@ const Header = ({ loggedIn, setLoggedIn }) => {
           MyLibraryList
         </Typography>
 
-        {/* Navigation */}
+        
         <Box>
           {loggedIn ? (
             <>
